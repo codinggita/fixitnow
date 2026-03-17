@@ -76,18 +76,41 @@ Users can book repair services, track repair progress, and rate technicians afte
 
 FixItNow
 │
-├── client
-│ ├── components
-│ ├── pages
-│ └── assets
+├── Frontend
+│   ├── components
+│   ├── pages
+│   └── assets
 │
-├── server
-│ ├── routes
-│ ├── controllers
-│ ├── models
-│ └── config
-│
-└── README.md
+├── README.md
+
+---
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm
+
+### Installation
+
+1. Clone the repository
+2. Navigate to the project root:
+   ```bash
+   cd fixitnow/fixitnow
+   ```
+3. Install frontend dependencies:
+   ```bash
+   npm run install-all
+   ```
+
+### Running the Project
+
+To start the frontend development server from the root:
+```bash
+npm run dev
+```
+The application will be available at `http://localhost:5173`.
 
 
 ---

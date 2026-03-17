@@ -1,0 +1,9 @@
+{
+  "name": "fixitnow-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix Frontend",
+    "install-all": "npm install --prefix Frontend",
+    "build": "npm run build --prefix Frontend"
+  }
+}
