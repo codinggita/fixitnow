@@ -1,137 +1,148 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Menu, X, Wrench } from 'lucide-react'
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import {
+  Wrench, Menu, X, Bell, User, ChevronDown,
+  Home, Calendar, Settings, Shield, LogOut
+} from 'lucide-react';
 
-const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+export default function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const { user, switchRole, logout } = useAuth();
+  const { notifications } = useNotification();
+  const location = useLocation();
 
   const navLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Services', href: '/services' },
-    { name: 'How It Works', href: '/#how-it-works' },
-    { name: 'Technicians', href: '/technicians' },
-    { name: 'Contact', href: '/#contact' },
-  ]
+    { to: '/', label: 'Home', icon: Home },
+    { to: '/bookings', label: 'My Bookings', icon: Calendar },
+    { to: '/tech-dashboard', label: 'Tech Panel', icon: Wrench },
+    { to: '/admin', label: 'Admin', icon: Shield },
+  ];
+
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <nav
-      className={`fixed w-full z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-white/90 backdrop-blur-md shadow-sm py-3'
-          : 'bg-white py-5'
-      }`}
-    >
+    <nav className="fixed top-0 left-0 right-0 z-50 glass" style={{ borderBottom: '1px solid rgba(99,102,241,0.1)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 cursor-pointer">
-            <div className="bg-primary-500 text-white p-1.5 rounded-lg">
-              <Wrench size={24} />
+          <Link to="/" className="flex items-center gap-2 no-underline">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+              <Wrench size={20} color="white" />
             </div>
-            <span className="font-bold text-2xl tracking-tight text-slate-900">
-              FixIt<span className="text-primary-500">Now</span>
-            </span>
+            <span className="text-xl font-bold gradient-text">FixItNow</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navLinks.map((link) => (
-              link.href.startsWith('/') ? (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="text-slate-600 hover:text-primary-500 font-medium transition-colors"
-                >
-                  {link.name}
-                </Link>
-              ) : (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-slate-600 hover:text-primary-500 font-medium transition-colors"
-                >
-                  {link.name}
-                </a>
-              )
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 no-underline ${
+                  isActive(to)
+                    ? 'bg-primary-500/20 text-primary-300'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50'
+                }`}
+              >
+                <Icon size={16} />
+                {label}
+              </Link>
             ))}
           </div>
 
-          {/* Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
-            <button className="text-slate-600 hover:text-primary-500 font-medium transition-colors px-4 py-2">
-              Login
+          {/* Right side */}
+          <div className="flex items-center gap-3">
+            {/* Notification bell */}
+            <button className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50 transition-all">
+              <Bell size={20} />
+              {notifications.length > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
+              )}
             </button>
-            <Link 
-              to="/services" 
-              className="bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
-            >
-              Book Repair
-            </Link>
-          </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+            {/* Role switcher + Profile */}
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg glass-light hover:bg-surface-lighter/70 transition-all cursor-pointer"
+              >
+                <span className="text-lg">{user?.avatar}</span>
+                <span className="hidden sm:block text-sm font-medium text-text-primary">{user?.name?.split(' ')[0]}</span>
+                <ChevronDown size={14} className="text-text-muted" />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-xl glass py-2 animate-fade-in" style={{ border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <div className="px-4 py-2 border-b border-surface-lighter/50">
+                    <p className="text-sm font-medium text-text-primary">{user?.name}</p>
+                    <p className="text-xs text-text-muted">{user?.email}</p>
+                  </div>
+                  <div className="px-2 py-2">
+                    <p className="px-2 py-1 text-xs text-text-muted uppercase tracking-wider">Switch Role</p>
+                    {['user', 'technician', 'admin'].map(role => (
+                      <button
+                        key={role}
+                        onClick={() => { switchRole(role); setProfileOpen(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
+                          user?.role === role
+                            ? 'bg-primary-500/20 text-primary-300'
+                            : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50'
+                        }`}
+                      >
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-t border-surface-lighter/50 px-2 pt-2">
+                    <button
+                      onClick={() => { logout(); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-danger hover:bg-danger/10 transition-all cursor-pointer"
+                    >
+                      <LogOut size={14} />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-slate-600 hover:text-primary-500 focus:outline-none"
+              className="md:hidden p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50 transition-all cursor-pointer"
+              onClick={() => setMobileOpen(!mobileOpen)}
             >
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className="md:hidden absolute w-full bg-white border-b border-slate-100 shadow-lg animate-fade-in-up">
-          <div className="px-4 pt-2 pb-6 space-y-2">
-            {navLinks.map((link) => (
-              link.href.startsWith('/') ? (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="block px-3 py-3 text-base font-medium text-slate-700 hover:text-primary-500 hover:bg-primary-50 rounded-md transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ) : (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="block px-3 py-3 text-base font-medium text-slate-700 hover:text-primary-500 hover:bg-primary-50 rounded-md transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.name}
-                </a>
-              )
-            ))}
-            <div className="pt-4 flex flex-col gap-3 px-3">
-              <button className="w-full border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg font-medium transition-colors">
-                Login
-              </button>
-              <Link 
-                to="/services"
-                className="w-full bg-primary-500 hover:bg-primary-600 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm text-center"
-                onClick={() => setIsOpen(false)}
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden glass animate-fade-in border-t border-surface-lighter/30">
+          <div className="px-4 py-3 space-y-1">
+            {navLinks.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all no-underline ${
+                  isActive(to)
+                    ? 'bg-primary-500/20 text-primary-300'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50'
+                }`}
               >
-                Book Repair
+                <Icon size={18} />
+                {label}
               </Link>
-            </div>
+            ))}
           </div>
         </div>
       )}
     </nav>
-  )
+  );
 }
-
-export default Navbar
