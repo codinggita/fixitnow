@@ -1,57 +1,43 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import Home from './pages/Home'
-import ServicesPage from './pages/ServicesPage'
-import TechniciansPage from './pages/TechniciansPage'
-import TechnicianLayout from './components/technician/TechnicianLayout'
-import TechnicianDashboard from './pages/technician/TechnicianDashboard'
-import MyJobs from './pages/technician/MyJobs'
-import Earnings from './pages/technician/Earnings'
-import Reviews from './pages/technician/Reviews'
-import Profile from './pages/technician/Profile'
-import './App.css'
-import { useLocation } from 'react-router-dom'
-
-const AppContent = () => {
-  const location = useLocation();
-  const isTechnicianPath = location.pathname === '/technician' || location.pathname.startsWith('/technician/');
-
-  if (isTechnicianPath) {
-    return (
-      <TechnicianLayout>
-        <Routes>
-          <Route path="/technician" element={<TechnicianDashboard />} />
-          <Route path="/technician/jobs" element={<MyJobs />} />
-          <Route path="/technician/earnings" element={<Earnings />} />
-          <Route path="/technician/reviews" element={<Reviews />} />
-          <Route path="/technician/profile" element={<Profile />} />
-        </Routes>
-      </TechnicianLayout>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col font-sans text-slate-800 bg-white selection:bg-primary-100 selection:text-primary-700">
-      <Navbar />
-      <main className="flex-grow">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/technicians" element={<TechniciansPage />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
-  );
-};
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import Navbar from './components/Navbar';
+import NotificationToast from './components/NotificationToast';
+import Home from './pages/Home';
+import CategoryPage from './pages/CategoryPage';
+import TechnicianProfile from './pages/TechnicianProfile';
+import BookingPage from './pages/BookingPage';
+import MyBookings from './pages/MyBookings';
+import TechDashboard from './pages/TechDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
-  )
+    <AuthProvider>
+      <NotificationProvider>
+        <Router>
+          <div className="w-full min-h-screen bg-surface">
+            <Navbar />
+            <div className="w-full h-16 shrink-0" /> {/* Global spacer for fixed navbar */}
+            <NotificationToast />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/category/:categoryId" element={<CategoryPage />} />
+              <Route path="/technician/:techId" element={<TechnicianProfile />} />
+              <Route path="/book/:techId" element={<BookingPage />} />
+              <Route path="/bookings" element={<MyBookings />} />
+              <Route path="/tech-dashboard" element={<TechDashboard />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+            </Routes>
+          </div>
+        </Router>
+      </NotificationProvider>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;
