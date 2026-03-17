@@ -6,6 +6,7 @@ import {
   Mail, Lock, Eye, EyeOff, UserPlus, Wrench,
   User, Phone, CheckCircle
 } from 'lucide-react';
+import api from '../utils/api';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -48,23 +49,24 @@ export default function Signup() {
     if (validate()) setStep(2);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
-    setTimeout(() => {
-      login({
-        id: 'u-new-' + Date.now(),
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        avatar: formData.role === 'technician' ? '🧑‍🔧' : '👤',
-      });
+    try {
+      const { data } = await api.post('/auth/register', formData);
+      login(data);
       notify.success('Account Created!', `Welcome to FixItNow, ${formData.name.split(' ')[0]}!`);
-      setLoading(false);
       navigate('/');
-    }, 1000);
+    } catch (error) {
+      notify.error(
+        'Account Creation Failed', 
+        error.response?.data?.message || 'Something went wrong. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -97,15 +99,15 @@ export default function Signup() {
 
       <div className="w-full max-w-md relative animate-fade-in-up">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 no-underline mb-4">
+        <div className="flex flex-col items-center text-center mb-8">
+          <Link to="/" className="flex items-center gap-2 no-underline mb-4">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
               <Wrench size={22} color="white" />
             </div>
             <span className="text-2xl font-bold gradient-text">FixItNow</span>
           </Link>
-          <h1 className="text-2xl font-bold text-text-primary mt-4">Create your account</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Create your account</h1>
           <p className="text-text-secondary text-sm mt-1">Join thousands of users & technicians</p>
         </div>
 
@@ -154,7 +156,7 @@ export default function Signup() {
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                     placeholder="Vijay Diwaniya"
-                    className={`input-field pl-10 ${errors.name ? 'border-danger' : ''}`}
+                    className={`input-field input-with-icon ${errors.name ? 'border-danger' : ''}`}
                   />
                 </div>
                 {errors.name && <p className="text-xs text-danger mt-1">{errors.name}</p>}
@@ -170,7 +172,7 @@ export default function Signup() {
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                     placeholder="you@example.com"
-                    className={`input-field pl-10 ${errors.email ? 'border-danger' : ''}`}
+                    className={`input-field input-with-icon ${errors.email ? 'border-danger' : ''}`}
                   />
                 </div>
                 {errors.email && <p className="text-xs text-danger mt-1">{errors.email}</p>}
@@ -186,7 +188,7 @@ export default function Signup() {
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
                     placeholder="9876543210"
-                    className={`input-field pl-10 ${errors.phone ? 'border-danger' : ''}`}
+                    className={`input-field input-with-icon ${errors.phone ? 'border-danger' : ''}`}
                   />
                 </div>
                 {errors.phone && <p className="text-xs text-danger mt-1">{errors.phone}</p>}
@@ -221,7 +223,7 @@ export default function Signup() {
                     value={formData.password}
                     onChange={(e) => handleChange('password', e.target.value)}
                     placeholder="Create a strong password"
-                    className={`input-field pl-10 pr-10 ${errors.password ? 'border-danger' : ''}`}
+                    className={`input-field input-with-icon input-with-icon-right ${errors.password ? 'border-danger' : ''}`}
                   />
                   <button
                     type="button"
@@ -262,7 +264,7 @@ export default function Signup() {
                     value={formData.confirmPassword}
                     onChange={(e) => handleChange('confirmPassword', e.target.value)}
                     placeholder="Re-enter your password"
-                    className={`input-field pl-10 ${errors.confirmPassword ? 'border-danger' : ''}`}
+                    className={`input-field input-with-icon ${errors.confirmPassword ? 'border-danger' : ''}`}
                   />
                   {formData.confirmPassword && formData.password === formData.confirmPassword && (
                     <CheckCircle size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-accent-500" />

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { Mail, Lock, Eye, EyeOff, LogIn, Wrench } from 'lucide-react';
@@ -23,24 +24,24 @@ export default function Login() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login({
-        id: 'u1',
-        name: formData.email.split('@')[0],
-        email: formData.email,
-        role: 'user',
-        avatar: '👤',
-      });
+    try {
+      const { data } = await api.post('/auth/login', formData);
+      login(data);
       notify.success('Welcome back!', 'You have logged in successfully.');
-      setLoading(false);
       navigate('/');
-    }, 800);
+    } catch (error) {
+      notify.error(
+        'Login Failed', 
+        error.response?.data?.message || 'Invalid email or password'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -56,15 +57,15 @@ export default function Login() {
 
       <div className="w-full max-w-md relative animate-fade-in-up">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 no-underline mb-4">
+        <div className="flex flex-col items-center text-center mb-8">
+          <Link to="/" className="flex items-center gap-2 no-underline mb-4">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
               <Wrench size={22} color="white" />
             </div>
             <span className="text-2xl font-bold gradient-text">FixItNow</span>
           </Link>
-          <h1 className="text-2xl font-bold text-text-primary mt-4">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Welcome back</h1>
           <p className="text-text-secondary text-sm mt-1">Sign in to your account to continue</p>
         </div>
 
@@ -80,7 +81,7 @@ export default function Login() {
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
                 placeholder="you@example.com"
-                className={`input-field pl-10 ${errors.email ? 'border-danger' : ''}`}
+                className={`input-field input-with-icon ${errors.email ? 'border-danger' : ''}`}
               />
             </div>
             {errors.email && <p className="text-xs text-danger mt-1">{errors.email}</p>}
@@ -99,7 +100,7 @@ export default function Login() {
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 placeholder="Enter your password"
-                className={`input-field pl-10 pr-10 ${errors.password ? 'border-danger' : ''}`}
+                className={`input-field input-with-icon input-with-icon-right ${errors.password ? 'border-danger' : ''}`}
               />
               <button
                 type="button"

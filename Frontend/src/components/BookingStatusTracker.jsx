@@ -1,4 +1,10 @@
-import { statusSteps } from '../data/mockData';
+const statusSteps = [
+  { key: 'pending', label: 'Pending', icon: '⏳' },
+  { key: 'confirmed', label: 'Booking Confirmed', icon: '✅' },
+  { key: 'assigned', label: 'Technician Assigned', icon: '👨‍🔧' },
+  { key: 'in-progress', label: 'Repair In Progress', icon: '🔧' },
+  { key: 'completed', label: 'Repair Completed', icon: '🎉' }
+];
 import { CheckCircle } from 'lucide-react';
 
 export default function BookingStatusTracker({ currentStatus }) {

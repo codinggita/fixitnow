@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import {
   Wrench, Menu, X, Bell, User, ChevronDown,
-  Home, Calendar, Settings, Shield, LogOut
+  Home, Calendar, Settings, Shield, LogOut,
+  LogIn, UserPlus
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -13,13 +14,35 @@ export default function Navbar() {
   const { user, switchRole, logout } = useAuth();
   const { notifications } = useNotification();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navLinks = [
     { to: '/', label: 'Home', icon: Home },
-    { to: '/bookings', label: 'My Bookings', icon: Calendar },
-    { to: '/tech-dashboard', label: 'Tech Panel', icon: Wrench },
-    { to: '/admin', label: 'Admin', icon: Shield },
+    { to: '/bookings', label: 'My Bookings', icon: Calendar, protected: true, roles: ['user', 'admin'] },
+    { to: '/tech-dashboard', label: 'Tech Panel', icon: Wrench, protected: true, roles: ['technician', 'admin'] },
+    { to: '/admin', label: 'Admin', icon: Shield, protected: true, roles: ['admin'] },
   ];
+
+  const filteredLinks = navLinks.filter(link => {
+    if (!link.protected) return true;
+    if (!user) return false;
+    if (!link.roles) return true;
+    return link.roles.includes(user.role);
+  });
+
+  const handleRoleSwitch = (newRole) => {
+    switchRole(newRole);
+    setProfileOpen(false);
+    
+    // Proactive redirection based on new role
+    if (newRole === 'technician') {
+      navigate('/tech-dashboard');
+    } else if (newRole === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/home');
+    }
+  };
 
   const isActive = (path) => location.pathname === path;
 
@@ -35,10 +58,17 @@ export default function Navbar() {
             </div>
             <span className="text-xl font-bold gradient-text">FixItNow</span>
           </Link>
+          
+          {/* Role badge for clarity in dev */}
+          {user && (
+            <div className="ml-4 px-2 py-0.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-[10px] font-bold uppercase tracking-wider text-primary-400">
+              {user.role}
+            </div>
+          )}
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ to, label, icon: Icon }) => (
+          <div className="hidden md:flex items-center gap-1 ml-auto mr-4">
+            {filteredLinks.map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
@@ -56,59 +86,74 @@ export default function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            {/* Notification bell */}
-            <button className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50 transition-all">
-              <Bell size={20} />
-              {notifications.length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
-              )}
-            </button>
+            {user ? (
+              <>
+                {/* Notification bell */}
+                <button className="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50 transition-all">
+                  <Bell size={20} />
+                  {notifications.length > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
+                  )}
+                </button>
 
-            {/* Role switcher + Profile */}
-            <div className="relative">
-              <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg glass-light hover:bg-surface-lighter/70 transition-all cursor-pointer"
-              >
-                <span className="text-lg">{user?.avatar}</span>
-                <span className="hidden sm:block text-sm font-medium text-text-primary">{user?.name?.split(' ')[0]}</span>
-                <ChevronDown size={14} className="text-text-muted" />
-              </button>
+                {/* Role switcher + Profile */}
+                <div className="relative">
+                  <button
+                    onClick={() => setProfileOpen(!profileOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg glass-light hover:bg-surface-lighter/70 transition-all cursor-pointer"
+                  >
+                    <span className="text-lg">{user?.avatar}</span>
+                    <span className="hidden sm:block text-sm font-medium text-text-primary">{user?.name?.split(' ')[0]}</span>
+                    <ChevronDown size={14} className="text-text-muted" />
+                  </button>
 
-              {profileOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl glass py-2 animate-fade-in" style={{ border: '1px solid rgba(99,102,241,0.2)' }}>
-                  <div className="px-4 py-2 border-b border-surface-lighter/50">
-                    <p className="text-sm font-medium text-text-primary">{user?.name}</p>
-                    <p className="text-xs text-text-muted">{user?.email}</p>
-                  </div>
-                  <div className="px-2 py-2">
-                    <p className="px-2 py-1 text-xs text-text-muted uppercase tracking-wider">Switch Role</p>
-                    {['user', 'technician', 'admin'].map(role => (
-                      <button
-                        key={role}
-                        onClick={() => { switchRole(role); setProfileOpen(false); }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                          user?.role === role
-                            ? 'bg-primary-500/20 text-primary-300'
-                            : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50'
-                        }`}
-                      >
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="border-t border-surface-lighter/50 px-2 pt-2">
-                    <button
-                      onClick={() => { logout(); setProfileOpen(false); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-danger hover:bg-danger/10 transition-all cursor-pointer"
-                    >
-                      <LogOut size={14} />
-                      Sign Out
-                    </button>
-                  </div>
+                  {profileOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-xl glass py-2 animate-fade-in" style={{ border: '1px solid rgba(99,102,241,0.2)' }}>
+                      <div className="px-4 py-2 border-b border-surface-lighter/50">
+                        <p className="text-sm font-medium text-text-primary">{user?.name}</p>
+                        <p className="text-xs text-text-muted">{user?.email}</p>
+                      </div>
+                      <div className="px-2 py-2">
+                        <p className="px-2 py-1 text-xs text-text-muted uppercase tracking-wider">Switch Role</p>
+                        {['user', 'technician', 'admin'].map(role => (
+                          <button
+                            key={role}
+                            onClick={() => handleRoleSwitch(role)}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all cursor-pointer ${
+                              user?.role === role
+                                ? 'bg-primary-500/20 text-primary-300'
+                                : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter/50'
+                            }`}
+                          >
+                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="border-t border-surface-lighter/50 px-2 pt-2">
+                        <button
+                          onClick={() => { logout(); setProfileOpen(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-danger hover:bg-danger/10 transition-all cursor-pointer"
+                        >
+                          <LogOut size={14} />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login" className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary transition-all no-underline">
+                  <LogIn size={16} />
+                  Login
+                </Link>
+                <Link to="/signup" className="btn-primary py-2 px-4 rounded-lg text-sm no-underline shadow-lg shadow-primary-500/20">
+                  <UserPlus size={16} />
+                  Signup
+                </Link>
+              </div>
+            )}
 
             {/* Mobile menu button */}
             <button
@@ -125,7 +170,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden glass animate-fade-in border-t border-surface-lighter/30">
           <div className="px-4 py-3 space-y-1">
-            {navLinks.map(({ to, label, icon: Icon }) => (
+            {filteredLinks.map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
@@ -140,6 +185,26 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+            {!user && (
+              <div className="pt-2 border-t border-surface-lighter/30 space-y-2">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-text-secondary no-underline"
+                >
+                  <LogIn size={18} />
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-primary-300 no-underline"
+                >
+                  <UserPlus size={18} />
+                  Signup
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

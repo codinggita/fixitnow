@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { categories, technicians } from '../data/mockData';
+import api from '../utils/api';
 import ServiceCard from '../components/ServiceCard';
 import TechnicianCard from '../components/TechnicianCard';
 import {
@@ -8,9 +9,30 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  const [categories, setCategories] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [servicesRes, techsRes] = await Promise.all([
+          api.get('/services'),
+          api.get('/technicians')
+        ]);
+        setCategories(servicesRes.data);
+        setTechnicians(techsRes.data);
+      } catch (error) {
+        console.error('Error fetching home data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const topTechnicians = technicians
-    .filter(t => t.verified && t.available)
-    .sort((a, b) => b.rating - a.rating)
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 4);
 
   return (
@@ -101,7 +123,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {categories.map((cat, index) => (
-              <ServiceCard key={cat.id} category={cat} index={index} />
+              <ServiceCard key={cat.categoryId} category={cat} index={index} />
             ))}
           </div>
         </div>
@@ -158,7 +180,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             {topTechnicians.map((tech, index) => (
-              <TechnicianCard key={tech.id} technician={tech} index={index} />
+              <TechnicianCard key={tech._id} technician={tech} index={index} />
             ))}
           </div>
         </div>

@@ -6,7 +6,7 @@ export default function ServiceCard({ category, index }) {
 
   return (
     <Link
-      to={`/category/${category.id}`}
+      to={`/category/${category.categoryId}`}
       className={`group block p-6 rounded-2xl glass card-hover no-underline animate-fade-in-up stagger-${index + 1}`}
     >
       <div className="flex items-start gap-4">

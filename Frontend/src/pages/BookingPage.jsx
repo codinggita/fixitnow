@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { technicians, timeSlots, categories } from '../data/mockData';
+import api from '../utils/api';
 import { useNotification } from '../context/NotificationContext';
 import ImageUpload from '../components/ImageUpload';
 import {
@@ -8,12 +8,25 @@ import {
   CheckCircle, ChevronRight, Zap
 } from 'lucide-react';
 
+const timeSlots = [
+  '09:00 AM - 10:00 AM',
+  '10:00 AM - 11:00 AM',
+  '11:00 AM - 12:00 PM',
+  '12:00 PM - 01:00 PM',
+  '02:00 PM - 03:00 PM',
+  '03:00 PM - 04:00 PM',
+  '04:00 PM - 05:00 PM',
+  '05:00 PM - 06:00 PM'
+];
+
 export default function BookingPage() {
   const { techId } = useParams();
   const navigate = useNavigate();
   const { notify } = useNotification();
-  const tech = technicians.find(t => t.id === techId);
-
+  
+  const [tech, setTech] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     category: '',
@@ -21,6 +34,26 @@ export default function BookingPage() {
     timeSlot: '',
     images: [],
   });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [techRes, servicesRes] = await Promise.all([
+          api.get(`/technicians/${techId}`),
+          api.get('/services')
+        ]);
+        setTech(techRes.data);
+        setCategories(servicesRes.data);
+      } catch (error) {
+        console.error('Error fetching booking data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [techId]);
+
+  if (loading) return <div className="min-h-screen pt-24 text-center">Loading...</div>;
 
   if (!tech) {
     return (
@@ -31,10 +64,9 @@ export default function BookingPage() {
     );
   }
 
-  const techCategories = categories.filter(c => tech.categories.includes(c.id));
-  const estimatedPrice = formData.category
-    ? categories.find(c => c.id === formData.category)?.avgPrice || 'Varies'
-    : '—';
+  const techCategories = categories.filter(c => tech.categories.includes(c.categoryId));
+  const selectedCategory = categories.find(c => c.categoryId === formData.category);
+  const estimatedPrice = selectedCategory ? selectedCategory.avgPrice : '—';
 
   const canProceed = () => {
     if (step === 1) return formData.category && formData.problem.trim().length > 5;
@@ -43,9 +75,22 @@ export default function BookingPage() {
     return false;
   };
 
-  const handleBook = () => {
-    setStep(4);
-    notify.success('Booking Confirmed!', `Your repair has been booked with ${tech.name}.`);
+  const handleBook = async () => {
+    try {
+      const bookingData = {
+        technicianId: tech._id,
+        categoryName: selectedCategory.name,
+        problemDescription: formData.problem,
+        date: new Date(), // Just using today for simplicity in this check
+        timeSlot: formData.timeSlot
+      };
+      
+      await api.post('/bookings', bookingData);
+      setStep(4);
+      notify.success('Booking Confirmed!', `Your repair has been booked with ${tech.name}.`);
+    } catch (error) {
+      notify.error('Booking Failed', error.response?.data?.message || 'Something went wrong');
+    }
   };
 
   const steps = [
@@ -114,8 +159,8 @@ export default function BookingPage() {
               <div className="grid grid-cols-2 gap-3">
                 {techCategories.map(cat => (
                   <button
-                    key={cat.id}
-                    onClick={() => setFormData(p => ({ ...p, category: cat.id }))}
+                    key={cat.categoryId}
+                    onClick={() => setFormData(p => ({ ...p, category: cat.categoryId }))}
                     className={`p-3 rounded-xl text-left transition-all cursor-pointer border ${
                       formData.category === cat.id
                         ? 'bg-primary-500/20 border-primary-500/50'
@@ -206,7 +251,7 @@ export default function BookingPage() {
               <div className="flex justify-between">
                 <span className="text-sm text-text-muted">Category</span>
                 <span className="text-sm font-medium text-text-primary">
-                  {categories.find(c => c.id === formData.category)?.name}
+                  {categories.find(c => c.categoryId === formData.category)?.name}
                 </span>
               </div>
               <div className="flex justify-between">

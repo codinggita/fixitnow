@@ -1,25 +1,46 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { categories, technicians } from '../data/mockData';
+import api from '../utils/api';
 import TechnicianCard from '../components/TechnicianCard';
 import { ArrowLeft, Filter, MapPin, SortDesc } from 'lucide-react';
-import { useState } from 'react';
 
 export default function CategoryPage() {
   const { categoryId } = useParams();
+  const [category, setCategory] = useState(null);
+  const [technicians, setTechnicians] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('rating');
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
 
-  const category = categories.find(c => c.id === categoryId);
-  let filteredTechs = technicians.filter(t => t.categories.includes(categoryId));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [servicesRes, techsRes] = await Promise.all([
+          api.get('/services'),
+          api.get(`/technicians?skill=${categoryId}`)
+        ]);
+        const currentCat = servicesRes.data.find(c => c.categoryId === categoryId);
+        setCategory(currentCat);
+        setTechnicians(techsRes.data);
+      } catch (error) {
+        console.error('Error fetching category data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [categoryId]);
+
+  let filteredTechs = [...technicians];
 
   if (showAvailableOnly) {
-    filteredTechs = filteredTechs.filter(t => t.available);
+    filteredTechs = filteredTechs.filter(t => t.availability);
   }
 
   filteredTechs.sort((a, b) => {
-    if (sortBy === 'rating') return b.rating - a.rating;
-    if (sortBy === 'reviews') return b.totalReviews - a.totalReviews;
-    if (sortBy === 'experience') return parseInt(b.experience) - parseInt(a.experience);
+    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    if (sortBy === 'reviews') return (b.numReviews || 0) - (a.numReviews || 0);
+    if (sortBy === 'experience') return (b.experience || 0) - (a.experience || 0);
     return 0;
   });
 
@@ -99,7 +120,7 @@ export default function CategoryPage() {
         {filteredTechs.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {filteredTechs.map((tech, index) => (
-              <TechnicianCard key={tech.id} technician={tech} index={index} />
+              <TechnicianCard key={tech._id} technician={tech} index={index} />
             ))}
           </div>
         ) : (

@@ -1,23 +1,40 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState({
-    id: 'u1',
-    name: 'Vijay Diwaniya',
-    email: 'vijay@example.com',
-    role: 'user', // 'user' | 'technician' | 'admin'
-    avatar: '👤'
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (userData) => setUser(userData);
-  const logout = () => setUser(null);
-  const switchRole = (role) => setUser(prev => prev ? { ...prev, role } : null);
+  useEffect(() => {
+    const userInfo = localStorage.getItem('userInfo');
+    if (userInfo) {
+      setUser(JSON.parse(userInfo));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem('userInfo', JSON.stringify(userData));
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('userInfo');
+  };
+
+  const switchRole = (role) => {
+    const updatedUser = user ? { ...user, role } : null;
+    setUser(updatedUser);
+    if (updatedUser) {
+      localStorage.setItem('userInfo', JSON.stringify(updatedUser));
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchRole }}>
-      {children}
+    <AuthContext.Provider value={{ user, login, logout, switchRole, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 }

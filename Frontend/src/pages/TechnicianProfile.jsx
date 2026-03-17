@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { technicians, sampleReviews } from '../data/mockData';
+import api from '../utils/api';
 import {
   ArrowLeft, Star, CheckCircle, Clock, MapPin,
   Briefcase, Calendar, MessageSquare, Shield
@@ -8,8 +9,25 @@ import {
 export default function TechnicianProfile() {
   const { techId } = useParams();
   const navigate = useNavigate();
-  const tech = technicians.find(t => t.id === techId);
-  const reviews = sampleReviews.filter(r => r.technicianId === techId);
+  const [tech, setTech] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]); // Assuming backend reviews are handled or empty for now
+
+  useEffect(() => {
+    const fetchTech = async () => {
+      try {
+        const res = await api.get(`/technicians/${techId}`);
+        setTech(res.data);
+      } catch (error) {
+        console.error('Error fetching technician profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTech();
+  }, [techId]);
+
+  if (loading) return <div className="min-h-screen pt-24 text-center">Loading...</div>;
 
   if (!tech) {
     return (
@@ -42,12 +60,12 @@ export default function TechnicianProfile() {
             <div className="flex-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold text-text-primary">{tech.name}</h1>
-                {tech.verified && (
+                {tech.verifiedData && (
                   <span className="inline-flex items-center gap-1 text-xs text-accent-500 font-semibold">
                     <CheckCircle size={16} /> Verified
                   </span>
                 )}
-                {tech.available ? (
+                {tech.availability ? (
                   <span className="badge badge-success">Available Now</span>
                 ) : (
                   <span className="badge badge-warning">Currently Busy</span>
@@ -61,15 +79,15 @@ export default function TechnicianProfile() {
                 <div className="flex items-center gap-1.5">
                   <Star size={16} className="text-warning fill-warning" />
                   <span className="font-semibold text-text-primary">{tech.rating}</span>
-                  <span className="text-sm text-text-muted">({tech.totalReviews} reviews)</span>
+                  <span className="text-sm text-text-muted">({tech.numReviews} reviews)</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-sm text-text-secondary">
                   <Briefcase size={14} />
-                  {tech.experience}
+                  {tech.experience} years
                 </div>
                 <div className="flex items-center gap-1.5 text-sm text-text-secondary">
                   <MapPin size={14} />
-                  {tech.location.area}
+                  {typeof tech.location === 'object' ? tech.location.area : tech.location}
                 </div>
                 <div className="flex items-center gap-1.5 text-sm text-text-secondary">
                   <Clock size={14} />
@@ -77,10 +95,10 @@ export default function TechnicianProfile() {
                 </div>
               </div>
 
-              {/* Skills */}
+              {/* Categories */}
               <div className="flex flex-wrap gap-2 mt-4">
-                {tech.skills.map(skill => (
-                  <span key={skill} className="badge badge-primary">{skill}</span>
+                {(tech.categories || []).map(cat => (
+                  <span key={cat} className="badge badge-primary">{cat.replace('-', ' ')}</span>
                 ))}
               </div>
             </div>
@@ -89,7 +107,7 @@ export default function TechnicianProfile() {
           {/* CTA */}
           <div className="mt-6 pt-6 border-t border-surface-lighter/30 flex flex-col sm:flex-row items-center gap-4">
             <Link
-              to={`/book/${tech.id}`}
+              to={`/book/${tech._id}`}
               className="btn-primary w-full sm:w-auto justify-center no-underline"
             >
               <Calendar size={18} />
@@ -109,7 +127,7 @@ export default function TechnicianProfile() {
             Services & Pricing
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {tech.services.map(service => (
+            {(tech.services || []).map(service => (
               <div key={service.name} className="p-4 rounded-xl glass-light flex items-center justify-between">
                 <span className="text-sm font-medium text-text-primary">{service.name}</span>
                 <span className="text-sm font-semibold text-accent-400">{service.price}</span>
@@ -122,9 +140,9 @@ export default function TechnicianProfile() {
         <div className="mt-8 p-6 rounded-2xl glass animate-fade-in-up stagger-2">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             {[
-              { label: 'Jobs Completed', value: tech.completedJobs.toLocaleString() },
+              { label: 'Jobs Completed', value: (tech.completedJobs || 0).toLocaleString() },
               { label: 'Rating', value: tech.rating },
-              { label: 'Reviews', value: tech.totalReviews },
+              { label: 'Reviews', value: tech.numReviews },
               { label: 'Response Time', value: tech.responseTime },
             ].map(({ label, value }) => (
               <div key={label}>

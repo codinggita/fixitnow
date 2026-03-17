@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { sampleBookings } from '../data/mockData';
+import api from '../utils/api';
 import BookingStatusTracker from '../components/BookingStatusTracker';
 import ReviewForm from '../components/ReviewForm';
 import { useNotification } from '../context/NotificationContext';
@@ -13,9 +13,25 @@ export default function MyBookings() {
   const [expandedId, setExpandedId] = useState(null);
   const [showReviewFor, setShowReviewFor] = useState(null);
   const { notify } = useNotification();
-  const [bookings] = useState(sampleBookings);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const res = await api.get('/bookings');
+        setBookings(res.data);
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
 
   const statusColors = {
+    pending: 'badge-warning',
     confirmed: 'badge-primary',
     assigned: 'badge-warning',
     'in-progress': 'badge-warning',
@@ -53,18 +69,18 @@ export default function MyBookings() {
         <div className="space-y-4">
           {bookings.map((booking, index) => (
             <div
-              key={booking.id}
+              key={booking._id}
               className={`rounded-2xl glass overflow-hidden animate-fade-in-up stagger-${(index % 3) + 1}`}
             >
               {/* Booking header */}
               <div
-                onClick={() => setExpandedId(expandedId === booking.id ? null : booking.id)}
+                onClick={() => setExpandedId(expandedId === booking._id ? null : booking._id)}
                 className="p-5 cursor-pointer hover:bg-surface-lighter/30 transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-base font-semibold text-text-primary">{booking.category}</h3>
+                      <h3 className="text-base font-semibold text-text-primary">{booking.categoryName}</h3>
                       <span className={`badge ${statusColors[booking.status]}`}>
                         {booking.status.replace('-', ' ')}
                       </span>
@@ -77,19 +93,19 @@ export default function MyBookings() {
                       </span>
                       <span className="flex items-center gap-1">
                         <span>👨‍🔧</span>
-                        {booking.technicianName}
+                        {booking.technician?.name || 'Assigned Tech'}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-accent-400">{booking.estimatedPrice}</span>
-                    {expandedId === booking.id ? <ChevronUp size={18} className="text-text-muted" /> : <ChevronDown size={18} className="text-text-muted" />}
+                    <span className="text-sm font-semibold text-accent-400">₹{booking.service?.price || 'Varies'}</span>
+                    {expandedId === booking._id ? <ChevronUp size={18} className="text-text-muted" /> : <ChevronDown size={18} className="text-text-muted" />}
                   </div>
                 </div>
               </div>
 
               {/* Expanded content */}
-              {expandedId === booking.id && (
+              {expandedId === booking._id && (
                 <div className="px-5 pb-5 border-t border-surface-lighter/30 animate-fade-in">
                   {/* Status tracker */}
                   <div className="py-6">
@@ -104,35 +120,35 @@ export default function MyBookings() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-text-muted">Booked on</span>
-                      <span className="text-text-secondary">{booking.createdAt}</span>
+                      <span className="text-sm text-text-secondary">{new Date(booking.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="flex flex-wrap gap-3">
                     <Link
-                      to={`/technician/${booking.technicianId}`}
+                      to={`/technician/${booking.technician?._id}`}
                       className="btn-secondary text-sm no-underline"
                     >
                       View Technician
                     </Link>
                     {booking.status === 'completed' && (
                       <button
-                        onClick={() => setShowReviewFor(showReviewFor === booking.id ? null : booking.id)}
+                        onClick={() => setShowReviewFor(showReviewFor === booking._id ? null : booking._id)}
                         className="btn-accent text-sm"
                       >
                         <Star size={14} />
-                        {showReviewFor === booking.id ? 'Hide Review' : 'Rate & Review'}
+                        {showReviewFor === booking._id ? 'Hide Review' : 'Rate & Review'}
                       </button>
                     )}
                   </div>
 
                   {/* Review form */}
-                  {showReviewFor === booking.id && (
+                  {showReviewFor === booking._id && (
                     <div className="mt-4">
                       <ReviewForm
                         technicianName={booking.technicianName}
-                        onSubmit={(review) => handleReview(booking.id, review)}
+                        onSubmit={(review) => handleReview(booking._id, review)}
                       />
                     </div>
                   )}

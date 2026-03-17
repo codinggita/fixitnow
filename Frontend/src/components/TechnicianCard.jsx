@@ -4,7 +4,7 @@ import { Star, Clock, MapPin, CheckCircle, Briefcase } from 'lucide-react';
 export default function TechnicianCard({ technician, index = 0 }) {
   return (
     <Link
-      to={`/technician/${technician.id}`}
+      to={`/technician/${technician._id}`}
       className={`block p-5 rounded-2xl glass card-hover no-underline animate-fade-in-up stagger-${(index % 6) + 1}`}
     >
       <div className="flex items-start gap-4">
@@ -19,10 +19,10 @@ export default function TechnicianCard({ technician, index = 0 }) {
             <h3 className="text-base font-semibold text-text-primary">
               {technician.name}
             </h3>
-            {technician.verified && (
+            {technician.verifiedData && (
               <CheckCircle size={16} className="text-accent-500 shrink-0" />
             )}
-            {technician.available ? (
+            {technician.availability ? (
               <span className="badge badge-success">Available</span>
             ) : (
               <span className="badge badge-warning">Busy</span>
@@ -35,19 +35,19 @@ export default function TechnicianCard({ technician, index = 0 }) {
               <Star size={14} className="text-warning fill-warning" />
               <span className="text-sm font-semibold text-text-primary">{technician.rating}</span>
             </div>
-            <span className="text-xs text-text-muted">({technician.totalReviews} reviews)</span>
+            <span className="text-xs text-text-muted">({technician.numReviews} reviews)</span>
             <span className="text-text-muted">·</span>
             <div className="flex items-center gap-1 text-xs text-text-muted">
               <Briefcase size={12} />
-              {technician.experience}
+              {technician.experience} years
             </div>
           </div>
 
-          {/* Skills */}
+          {/* Categories/Skills */}
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {technician.skills.map(skill => (
-              <span key={skill} className="px-2 py-0.5 text-xs rounded-md bg-surface-lighter text-text-secondary">
-                {skill}
+            {(technician.categories || []).map(cat => (
+              <span key={cat} className="px-2 py-0.5 text-xs rounded-md bg-surface-lighter text-text-secondary">
+                {cat.replace('-', ' ')}
               </span>
             ))}
           </div>
@@ -59,7 +59,7 @@ export default function TechnicianCard({ technician, index = 0 }) {
         <div className="flex items-center gap-4 text-xs text-text-muted">
           <span className="flex items-center gap-1">
             <MapPin size={12} />
-            {technician.location.area}
+            {typeof technician.location === 'object' ? technician.location.area : technician.location}
           </span>
           <span className="flex items-center gap-1">
             <Clock size={12} />

@@ -333,6 +333,14 @@
   transition: all 0.3s ease;
 }
 
+.input-with-icon {
+  padding-left: 2.75rem !important;
+}
+
+.input-with-icon-right {
+  padding-right: 2.75rem !important;
+}
+
 .input-field:focus {
   outline: none;
   border-color: var(--color-primary-500);
